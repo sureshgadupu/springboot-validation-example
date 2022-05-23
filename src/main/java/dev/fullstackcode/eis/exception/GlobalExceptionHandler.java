@@ -20,6 +20,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 import javax.validation.ConstraintViolationException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,26 +29,39 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
 
-//    @ExceptionHandler(ConstraintViolationException.class)
-//    @ResponseBody
-//    public ErrorDetails handleExceptions(Exception ex, WebRequest request) {
-//        ErrorDetails errorDetails = new ErrorDetails(LocalDate.now(),ex.getMessage(), "Exception");
-//        return errorDetails;
-//    }
+    @ExceptionHandler(Exception.class)
+    @ResponseBody
+    public ErrorDetails handleExceptions(Exception ex, WebRequest request) {
+        ErrorDetails errorDetails = new ErrorDetails(LocalDate.now(),ex.getMessage(), "Exception");
+        return errorDetails;
+    }
 
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatus status, WebRequest request) {
 
-        List<ErrorMessageDto> validationErrorDetails = ex.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .map(error -> new ErrorMessageDto(error.getObjectName(),error.getField(),error.getDefaultMessage(),error.getRejectedValue()))
-                .collect(Collectors.toList());
+       List<ErrorMessageDto> validationErrorDetails = ex.getBindingResult()
+                                                        .getAllErrors()
+                                                        .stream()
+                                                        .map(error -> mapToErrorMessageDto(error))
+                                                        .collect(Collectors.toList());
 
         ErrorResponse response = new ErrorResponse(status.name(), status.value(),validationErrorDetails);
         return new ResponseEntity<>(response,status );
 
     }
+
+    private ErrorMessageDto mapToErrorMessageDto(ObjectError error) {
+        ConstraintViolationImpl<?> source =  (ConstraintViolationImpl)error.unwrap(ConstraintViolationImpl.class);
+        String fieldError = "";
+        String rejectedValue = "";
+        if(error instanceof  FieldError) {
+            fieldError = ((FieldError) error).getField();
+            rejectedValue = (String)((FieldError) error).getRejectedValue();
+        }
+        return new ErrorMessageDto(error.getObjectName(),fieldError,error.getDefaultMessage(),rejectedValue);
+    }
+
+
 
     @ExceptionHandler(ConstraintViolationException.class)
     @ResponseBody

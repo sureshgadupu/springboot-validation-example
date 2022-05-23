@@ -2,8 +2,10 @@ package dev.fullstackcode.eis.entity;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import dev.fullstackcode.eis.validation.ConditionalNotNull;
 import dev.fullstackcode.eis.validation.OnCreate;
 import dev.fullstackcode.eis.validation.OnUpdate;
+import dev.fullstackcode.eis.validation.ValidName;
 
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -27,6 +29,7 @@ import java.time.LocalDate;
 
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
+@ConditionalNotNull(fields = "salary,email",dependsOn = "hire_date" )
 public class Employee implements Serializable {
 
     @Id
@@ -37,10 +40,12 @@ public class Employee implements Serializable {
 
     @NotBlank(message = "FirstName should not be blank")
     @Size(min = 3,message = "FirstName should be at least 3 chars")
+    @ValidName
     private String first_name;
 
     @NotBlank(message = "LastName should not be blank")
-    @Size(min = 3,message = "LastName should be at least 3 chars")
+    @Size(min = 3,message = "LastName should be at least ${min} chars")
+
     private String last_name;
 
     @Enumerated(EnumType.STRING)
@@ -52,7 +57,7 @@ public class Employee implements Serializable {
     @PastOrPresent
     private LocalDate hire_date;
 
-    @NotBlank // (message = "Email should not be blank")
+    // @NotBlank // (message = "Email should not be blank")
     @Email    // (message = "Not a valid email")
     private String email;
 
